@@ -7,7 +7,7 @@ import decimal
 
 #Parametros del programa
 SQL_table='SigmaGestion.Gestion.PresupForecast_copy'
-sql_col_names = "select column_name from information_schema.columns where table_name = 'PresupForecast_copy'"
+sql_col_names = "select column_name from information_schema.columns where table_name = 'PresupForecast'"
 n_pag=0
 n_rows=10          #Número de registros a mostrar por página.
 
@@ -105,11 +105,15 @@ def Show_Dataset(first_row=0,show_n=n_rows):
 
     for j in range(len(col_names)-2):
         if not j in [1, 4,6, 7]:
-            ttk.Label(DataFrame,text=col_names[j]).grid(column=j, row=0, sticky=W)
+            if j==2:
+                ttk.Label(DataFrame,text='C.C.').grid(column=j, row=0, sticky=W)
+            else:
+                ttk.Label(DataFrame,text=col_names[j]).grid(column=j, row=0, sticky=W)
 
     Original_data=[]
 
     Entries=['']*min(show_n,len(dataset)-first_row)
+
     for i in range(min(show_n,len(dataset)-first_row)):
 
         Entries[i] = StringVar()
@@ -122,10 +126,16 @@ def Show_Dataset(first_row=0,show_n=n_rows):
 
                 ttk.Label(DataFrame,text=sqlrow[j]).grid(column=j, row=i+1, sticky=W)
 
-        Original_data.append( str(sqlrow[len(sqlrow)-3]))
-        Valor=ttk.Entry(DataFrame,width=7, textvariable=Entries[i])
-        Valor.insert(0,sqlrow[len(sqlrow)-3] )
-        Valor.grid(column=10, row=i+1)
+        str_valor= '{0:,.0f}'.format(sqlrow[len(sqlrow)-3]).replace(',','.')
+
+        Original_data.append(str_valor.replace('.',''))
+        Valor=ttk.Entry(DataFrame,width=10, textvariable=Entries[i])
+        # Valor[i].bind('<Leave>',lambda args: Valor[i].Delete(0,END))
+        # Valor[i].bind('<Leave>',lambda *args: Valor[i].insert(0,'{0:,.0f}'.format(int(Entries[i].get().replace('.','')))))
+
+        # Valor.bind('<KeyRelease>',lambda arg: print("hola"))
+        Valor.insert(0,str_valor)
+        Valor.grid(column=9, row=i+1,sticky=W,columnspan=2)
         add_margin(DataFrame)
 
 def QueryExec(*args):
@@ -240,7 +250,8 @@ def get_values():
     global Values
     Values=[]
     for E in Entries:
-        val=E.get()
+        val=E.get().replace('.','')
+
         if not isnumeric(val):
             no_numeric_value()
             return False
@@ -264,7 +275,6 @@ cursor = conn.cursor()  #Se instancia una clase que realizará las consultas a l
 cursor.execute(sql_col_names)
 pyodbc_col = cursor.fetchall()
 col_names = [x[0] for x in pyodbc_col]
-
 cursor.execute(sql)
 
 dataset=cursor.fetchall()
