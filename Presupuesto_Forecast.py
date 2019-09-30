@@ -6,7 +6,7 @@ import math
 import decimal
 
 #Parametros del programa
-SQL_table='SigmaGestion.Gestion.PresupForecast_copy'
+SQL_table='SigmaGestion.Gestion.PresupForecast'
 sql_col_names = "select column_name from information_schema.columns where table_name = 'PresupForecast'"
 n_pag=0
 n_rows=10          #Número de registros a mostrar por página.
@@ -104,13 +104,13 @@ def Show_Dataset(first_row=0,show_n=n_rows):
     for child in DataFrame.winfo_children(): child.destroy()
 
     for j in range(len(col_names)-2):
-        if not j in [1, 4,6, 7]:
-            if j==2:
+        if not j in [3, 5, 6]:
+            if j==1:
                 ttk.Label(DataFrame,text='C.C.').grid(column=j, row=0, sticky=W)
             else:
                 ttk.Label(DataFrame,text=col_names[j]).grid(column=j, row=0, sticky=W)
 
-    Original_data=[]
+    Original_data=['']*min(show_n,len(dataset)-first_row)
 
     Entries=['']*min(show_n,len(dataset)-first_row)
 
@@ -122,19 +122,22 @@ def Show_Dataset(first_row=0,show_n=n_rows):
 
 
         for j in range(len(sqlrow)-3):
-            if not j in [1, 4,6, 7]:
+            if not j in [3, 5, 6]:
 
                 ttk.Label(DataFrame,text=sqlrow[j]).grid(column=j, row=i+1, sticky=W)
 
         str_valor= '{0:,.0f}'.format(sqlrow[len(sqlrow)-3]).replace(',','.')
 
-        Original_data.append(str_valor.replace('.',''))
+        Original_data[i]=str_valor.replace('.','')
+
         Valor=ttk.Entry(DataFrame,width=10, textvariable=Entries[i])
+
         # Valor[i].bind('<Leave>',lambda args: Valor[i].Delete(0,END))
         # Valor[i].bind('<Leave>',lambda *args: Valor[i].insert(0,'{0:,.0f}'.format(int(Entries[i].get().replace('.','')))))
 
         # Valor.bind('<KeyRelease>',lambda arg: print("hola"))
         Valor.insert(0,str_valor)
+        print(Original_data[i]+' y '+Entries[i].get())
         Valor.grid(column=9, row=i+1,sticky=W,columnspan=2)
         add_margin(DataFrame)
 
@@ -177,24 +180,24 @@ def previous(*arg):
 
 def add_records(win):
 
-    insert_sql="INSERT INTO "+SQL_table+"("+col_names[1]+","
-    insert_sql+=col_names[2]+","+col_names[3]+","+col_names[4]+","
-    insert_sql+=col_names[5]+","+col_names[6]+","+col_names[7]+","
-    insert_sql+=col_names[8]+","+col_names[9]+","+col_names[10]+","+col_names[11]+")"
+    insert_sql="INSERT INTO "+SQL_table+"("
+    insert_sql+=col_names[1]+","+col_names[2]+","+col_names[3]+","
+    insert_sql+=col_names[4]+","+col_names[5]+","+col_names[6]+","
+    insert_sql+=col_names[7]+","+col_names[8]+","+col_names[9]+","+col_names[10]+")"
 
-    update_sql ="UPDATE "+SQL_table+" SET "+col_names[8]+"='NO VIGENTE', "+col_names[10]+"=0 WHERE "
+    update_sql ="UPDATE "+SQL_table+" SET "+col_names[7]+"='NO VIGENTE', "+col_names[9]+"=0 WHERE "
 
     data2insert=[]
 
     sql_array="("
 
     for i in distinct:
-        data2insert=[str(x) for x in dataset[i]]
+        data2insert=[str(x) for x in dataset[i+n_rows*n_pag]]
 
-        insert_sql_full = insert_sql + " VALUES ("+data2insert[1]+",'"
-        insert_sql_full += data2insert[2]+"','"+data2insert[3]+"',"+data2insert[4]+","
-        insert_sql_full += data2insert[5]+",'"+data2insert[6]+"','"+data2insert[7]+"','"
-        insert_sql_full += data2insert[8]+"',"+Values[i]
+        insert_sql_full = insert_sql + " VALUES ('"+data2insert[1]+"','"
+        insert_sql_full += data2insert[2]+"','"+data2insert[3]+"',"+data2insert[4]+",'"
+        insert_sql_full += data2insert[5]+"','"+data2insert[6]+"','"+data2insert[7]+"',"
+        insert_sql_full += Values[i]
         insert_sql_full += ",1, CURRENT_TIMESTAMP " +")"
         print(insert_sql_full)
         cursor.execute(insert_sql_full)
@@ -266,7 +269,8 @@ def compare_values(Values):
     for i in range(len(Values)):
         if Values[i]!=Original_data[i]:
             distinct.append(i)
-
+    print("los valoes de distinct son: ")
+    print(distinct)
     return distinct
 
 sql='select * from ' + SQL_table +' where activo=1'
@@ -274,7 +278,7 @@ sql='select * from ' + SQL_table +' where activo=1'
 cursor = conn.cursor()  #Se instancia una clase que realizará las consultas a la base de datos
 cursor.execute(sql_col_names)
 pyodbc_col = cursor.fetchall()
-col_names = [x[0] for x in pyodbc_col]
+col_names = [x[0] for x in pyodbc_col[9:]]
 cursor.execute(sql)
 
 dataset=cursor.fetchall()
