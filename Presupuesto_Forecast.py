@@ -6,8 +6,8 @@ import math
 import decimal
 
 #Parametros del programa
-SQL_table='SigmaGestion.Gestion.PresupForecast'
-sql_col_names = "select column_name from information_schema.columns where table_name = 'PresupForecast'"
+SQL_table='SigmaGestion.Gestion.PresupForecast_copy'
+sql_col_names = "select column_name from information_schema.columns where table_name = 'PresupForecast_copy'"
 n_pag=0
 n_rows=10          #Número de registros a mostrar por página.
 
@@ -75,9 +75,9 @@ def Get_Query():
                 return []
             sql += "AnoMes = '"+ am_get +"'"
 
-    Values = get_values()
-    distinct = compare_values(Values)
-    modif_alert(distinct)
+    # Values = get_values()
+    # distinct = compare_values(Values)
+    # modif_alert(distinct)
     cursor.execute(sql)
 
     dataset=cursor.fetchall()
@@ -145,6 +145,10 @@ def QueryExec(*args):
 
     global dataset
     dataset=Get_Query()
+    Values = get_values()
+    if  Values:
+        distinct = compare_values(Values)
+        modif_alert(distinct)
     Show_Dataset()
 
 def save_regs():
@@ -157,29 +161,33 @@ def save_regs():
 def next(*arg):
     global n_pag
     n_dataset=len(dataset)
-    n_pag+=1
-    n_pag=min(n_pag,math.floor(n_dataset/n_rows))
-    num_pag.config(text='pag: '+str(n_pag+1))
+
     Values = get_values()
+    print("Values are: ")
+    print(Values)
     if  Values:
 
         distinct = compare_values(Values)
         modif_alert(distinct)
+    n_pag+=1
+    n_pag=min(n_pag,math.floor(n_dataset/n_rows))
+    num_pag.config(text='pag: '+str(n_pag+1))
     Show_Dataset(first_row=n_rows*n_pag)
 
 def previous(*arg):
     global n_pag
+
+    Values = get_values()
+    if  Values:
+        distinct = compare_values(Values)
+        modif_alert(distinct)
     n_pag-=1
     n_pag=max(n_pag,0)
     num_pag.config(text='pag: '+str(n_pag+1))
-    Values = get_values()
-    if not Values:
-        distinct = compare_values(Values)
-        modif_alert(distinct)
     Show_Dataset(first_row=n_rows*n_pag)
 
 def add_records(win):
-
+    global dataset
     insert_sql="INSERT INTO "+SQL_table+"("
     insert_sql+=col_names[1]+","+col_names[2]+","+col_names[3]+","
     insert_sql+=col_names[4]+","+col_names[5]+","+col_names[6]+","
@@ -213,6 +221,7 @@ def add_records(win):
     conn.commit()
 
     win.destroy()
+    dataset=Get_Query()
     Show_Dataset(first_row=n_rows*n_pag)
 
 def dont_add_modif(win):
@@ -278,7 +287,7 @@ sql='select * from ' + SQL_table +' where activo=1'
 cursor = conn.cursor()  #Se instancia una clase que realizará las consultas a la base de datos
 cursor.execute(sql_col_names)
 pyodbc_col = cursor.fetchall()
-col_names = [x[0] for x in pyodbc_col[9:]]
+col_names = ['id','CodiCC','CtaForecast','VerForecast','AnoMes','Fechaingreso','usuario','Estado','Valor','activo','date_created']
 cursor.execute(sql)
 
 dataset=cursor.fetchall()
